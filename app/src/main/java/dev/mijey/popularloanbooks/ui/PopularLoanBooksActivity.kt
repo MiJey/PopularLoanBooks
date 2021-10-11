@@ -36,7 +36,10 @@ class PopularLoanBooksActivity : AppCompatActivity() {
         uiActions: (UiAction) -> Unit
     ) {
         val booksAdapter = BooksAdapter()
-        list.adapter = booksAdapter
+        list.adapter = booksAdapter.withLoadStateHeaderAndFooter(
+            header = BooksLoadStateAdapter { booksAdapter.retry() },
+            footer = BooksLoadStateAdapter { booksAdapter.retry() }
+        )
 
         lifecycleScope.launch {
             uiState.map { it.pageIndex }

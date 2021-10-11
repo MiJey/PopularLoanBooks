@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">PopularLoanBooks</string>
     <string name="no_results">목록이 없습니다.</string>
+    <string name="retry">다시 시도</string>
 </resources>

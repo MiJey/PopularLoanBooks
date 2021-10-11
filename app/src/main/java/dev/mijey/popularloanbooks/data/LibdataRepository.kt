@@ -19,6 +19,6 @@ class LibdataRepository(private val service: LibdataService) {
     }
 
     companion object {
-        const val NETWORK_PAGE_SIZE = 30
+        const val NETWORK_PAGE_SIZE = 10
     }
 }

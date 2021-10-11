@@ -4,10 +4,11 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.RecyclerView
 import dev.mijey.popularloanbooks.databinding.BookViewItemBinding
 import dev.mijey.popularloanbooks.model.Book
 
-class BooksAdapter : PagingDataAdapter<Book, BookViewHolder>(BOOK_COMPARATOR) {
+class BooksAdapter : PagingDataAdapter<Book, BooksAdapter.BookViewHolder>(BOOK_COMPARATOR) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookViewHolder {
         val binding =
@@ -26,6 +27,20 @@ class BooksAdapter : PagingDataAdapter<Book, BookViewHolder>(BOOK_COMPARATOR) {
 
             override fun areContentsTheSame(oldItem: Book, newItem: Book): Boolean =
                 oldItem == newItem
+        }
+    }
+
+    inner class BookViewHolder(private val binding: BookViewItemBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+
+        init {
+            binding.item.setOnClickListener {
+                // TODO 상세 내용 화면
+            }
+        }
+
+        fun bind(book: Book) {
+            binding.book = book
         }
     }
 }
