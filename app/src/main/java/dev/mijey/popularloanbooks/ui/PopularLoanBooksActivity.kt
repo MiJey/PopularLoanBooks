@@ -1,8 +1,9 @@
 package dev.mijey.popularloanbooks.ui
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.RecyclerView
@@ -81,6 +82,10 @@ class PopularLoanBooksActivity : AppCompatActivity() {
             .map { it.pagingData }
             .distinctUntilChanged()
 
+        retryButton.setOnClickListener {
+            booksAdapter.retry()
+        }
+
         lifecycleScope.launch {
             combine(shouldScrollToTop, pagingData, ::Pair)
                 .distinctUntilChangedBy { it.second }
@@ -88,6 +93,28 @@ class PopularLoanBooksActivity : AppCompatActivity() {
                     booksAdapter.submitData(pagingData)
                     if (shouldScroll) list.scrollToPosition(0)
                 }
+        }
+
+        lifecycleScope.launch {
+            booksAdapter.loadStateFlow.collect { loadState ->
+                val isListEmpty =
+                    loadState.refresh is LoadState.NotLoading && booksAdapter.itemCount == 0
+                emptyList.isVisible = isListEmpty
+                list.isVisible = !isListEmpty
+
+                progressBar.isVisible = loadState.source.refresh is LoadState.Loading
+
+                val errorState = loadState.source.refresh as? LoadState.Error
+                    ?: loadState.source.append as? LoadState.Error
+                    ?: loadState.source.prepend as? LoadState.Error
+                    ?: loadState.append as? LoadState.Error
+                    ?: loadState.prepend as? LoadState.Error
+                errorState?.let {
+                    errorMsg.text = "${it.error}"
+                }
+                errorMsg.isVisible = errorState != null
+                retryButton.isVisible = errorState != null
+            }
         }
     }
 }

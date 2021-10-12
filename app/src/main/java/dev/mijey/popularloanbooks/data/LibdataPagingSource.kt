@@ -5,6 +5,7 @@ import androidx.paging.PagingState
 import dev.mijey.popularloanbooks.api.LibdataService
 import dev.mijey.popularloanbooks.data.LibdataRepository.Companion.NETWORK_PAGE_SIZE
 import dev.mijey.popularloanbooks.model.Book
+import dev.mijey.popularloanbooks.ui.PopularLoanBooksViewModel.Companion.DEFAULT_PAGE_INDEX
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -14,15 +15,14 @@ class LibdataPagingSource(
 ) : PagingSource<Int, Book>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Book> {
         return try {
-            val position = params.key ?: pageIndex
+            val position = params.key ?: DEFAULT_PAGE_INDEX
             val response = service.getPopularLoanBooks(
                 pageIndex = position,
                 pageSize = params.loadSize
             )
 
             // TODO error message
-            val books = response.items[1].row ?: throw Exception()
-
+            val books = response.items[1].row ?: throw Exception("server error")
             val nextKey = if (books.isEmpty()) {
                 null
             } else {
