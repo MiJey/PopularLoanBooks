@@ -5,10 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.insertSeparators
+import androidx.paging.map
 import dev.mijey.popularloanbooks.data.LibdataRepository
-import dev.mijey.popularloanbooks.model.Book
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+
 
 class PopularLoanBooksViewModel(
     private val repository: LibdataRepository,
@@ -69,9 +71,27 @@ class PopularLoanBooksViewModel(
         super.onCleared()
     }
 
-    private fun requestBook(pageIndex: Int): Flow<PagingData<Book>> =
+    private fun requestBook(pageIndex: Int): Flow<PagingData<UiModel>> =
         repository.getSearchResultStream(pageIndex)
+            .map { pagingData -> pagingData.map { UiModel.BookItem(it) } }
+            .map {
+                it.insertSeparators { before, after ->
+                    after ?: return@insertSeparators null
+                    before
+                        ?: return@insertSeparators UiModel.SeparatorItem(after.roundedRank)
+
+                    if (before.roundedRank < after.roundedRank) {
+                        UiModel.SeparatorItem(after.roundedRank)
+                    } else {
+                        null
+                    }
+                }
+            }
             .cachedIn(viewModelScope)
+
+    private val UiModel.BookItem.roundedRank: Int
+        // 1~100 -> TOP 100, 101~200 -> TOP 200
+        get() = ((this.book.rankNumber.toInt() + 99) / 100) * 100
 
     companion object {
         const val LAST_PAGE_SCROLLED: String = "last_page_scrolled"

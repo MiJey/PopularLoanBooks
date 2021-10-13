@@ -23,6 +23,7 @@ class LibdataPagingSource(
 
             // TODO error message
             val books = response.items[1].row ?: throw Exception("server error")
+
             val nextKey = if (books.isEmpty()) {
                 null
             } else {

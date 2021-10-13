@@ -4,43 +4,55 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.ViewHolder
+import dev.mijey.popularloanbooks.R
 import dev.mijey.popularloanbooks.databinding.BookViewItemBinding
-import dev.mijey.popularloanbooks.model.Book
+import dev.mijey.popularloanbooks.databinding.SeparatorViewItemBinding
 
-class BooksAdapter : PagingDataAdapter<Book, BooksAdapter.BookViewHolder>(BOOK_COMPARATOR) {
+class BooksAdapter : PagingDataAdapter<UiModel, ViewHolder>(UIMODEL_COMPARATOR) {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookViewHolder {
-        val binding =
-            BookViewItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return BookViewHolder(binding)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        if (viewType == R.layout.book_view_item) {
+            val binding =
+                BookViewItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return BookViewHolder(binding)
+        } else {
+            val binding =
+                SeparatorViewItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return SeparatorViewHolder(binding)
+        }
+
     }
 
-    override fun onBindViewHolder(holder: BookViewHolder, position: Int) {
-        holder.bind(getItem(position) ?: return)
+    override fun getItemViewType(position: Int): Int {
+        return when (getItem(position)) {
+            is UiModel.BookItem -> R.layout.book_view_item
+            is UiModel.SeparatorItem -> R.layout.separator_view_item
+            null -> throw UnsupportedOperationException("Unknown view")
+        }
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val uiModel = getItem(position)
+        uiModel.let {
+            when (uiModel) {
+                is UiModel.BookItem -> (holder as BookViewHolder).bind(uiModel.book)
+                is UiModel.SeparatorItem -> (holder as SeparatorViewHolder).bind(uiModel.roundedRank)
+            }
+        }
     }
 
     companion object {
-        private val BOOK_COMPARATOR = object : DiffUtil.ItemCallback<Book>() {
-            override fun areItemsTheSame(oldItem: Book, newItem: Book): Boolean =
-                oldItem.bookName == newItem.bookName
-
-            override fun areContentsTheSame(oldItem: Book, newItem: Book): Boolean =
-                oldItem == newItem
-        }
-    }
-
-    inner class BookViewHolder(private val binding: BookViewItemBinding) :
-        RecyclerView.ViewHolder(binding.root) {
-
-        init {
-            binding.item.setOnClickListener {
-                // TODO 상세 내용 화면
+        private val UIMODEL_COMPARATOR = object : DiffUtil.ItemCallback<UiModel>() {
+            override fun areItemsTheSame(oldItem: UiModel, newItem: UiModel): Boolean {
+                return (oldItem is UiModel.BookItem && newItem is UiModel.BookItem &&
+                        oldItem.book.bookName == newItem.book.bookName) ||
+                        (oldItem is UiModel.SeparatorItem && newItem is UiModel.SeparatorItem &&
+                                oldItem.roundedRank == newItem.roundedRank)
             }
-        }
 
-        fun bind(book: Book) {
-            binding.book = book
+            override fun areContentsTheSame(oldItem: UiModel, newItem: UiModel): Boolean =
+                oldItem == newItem
         }
     }
 }

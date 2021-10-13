@@ -63,6 +63,11 @@ class PopularLoanBooksActivity : AppCompatActivity() {
                 if (dy != 0) onScrollChanged(UiAction.Scroll(currentPageIndex = uiState.value.pageIndex))
             }
         })
+
+        retryButton.setOnClickListener {
+            booksAdapter.retry()
+        }
+
         val notLoading = booksAdapter.loadStateFlow
             .distinctUntilChangedBy { it.refresh }
             .map { it.refresh is LoadState.NotLoading }
@@ -81,10 +86,6 @@ class PopularLoanBooksActivity : AppCompatActivity() {
         val pagingData = uiState
             .map { it.pagingData }
             .distinctUntilChanged()
-
-        retryButton.setOnClickListener {
-            booksAdapter.retry()
-        }
 
         lifecycleScope.launch {
             combine(shouldScrollToTop, pagingData, ::Pair)
