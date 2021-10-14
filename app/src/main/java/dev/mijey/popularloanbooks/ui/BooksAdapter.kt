@@ -12,16 +12,15 @@ import dev.mijey.popularloanbooks.databinding.SeparatorViewItemBinding
 class BooksAdapter : PagingDataAdapter<UiModel, ViewHolder>(UIMODEL_COMPARATOR) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        if (viewType == R.layout.book_view_item) {
+        return if (viewType == R.layout.book_view_item) {
             val binding =
                 BookViewItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            return BookViewHolder(binding)
+            BookViewHolder(binding)
         } else {
             val binding =
                 SeparatorViewItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            return SeparatorViewHolder(binding)
+            SeparatorViewHolder(binding)
         }
-
     }
 
     override fun getItemViewType(position: Int): Int {

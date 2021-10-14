@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import dev.mijey.popularloanbooks.api.LibdataService
 import dev.mijey.popularloanbooks.data.LibdataRepository
 import dev.mijey.popularloanbooks.databinding.ActivityPopularLoanBooksBinding
+import dev.mijey.popularloanbooks.db.BookDatabase
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -17,7 +18,10 @@ class PopularLoanBooksActivity : AppCompatActivity() {
     private val viewModel: PopularLoanBooksViewModel by viewModels {
         PopularLoanBooksViewModelFactory(
             owner = this,
-            repository = LibdataRepository(LibdataService.create()),
+            repository = LibdataRepository(
+                service = LibdataService.create(),
+                database = BookDatabase.getInstance(this)
+            ),
         )
     }
 
@@ -37,16 +41,13 @@ class PopularLoanBooksActivity : AppCompatActivity() {
         uiActions: (UiAction) -> Unit
     ) {
         val booksAdapter = BooksAdapter()
-        list.adapter = booksAdapter.withLoadStateHeaderAndFooter(
-            header = BooksLoadStateAdapter { booksAdapter.retry() },
-            footer = BooksLoadStateAdapter { booksAdapter.retry() }
-        )
+        val header = BooksLoadStateAdapter { booksAdapter.retry() }
+        val footer = BooksLoadStateAdapter { booksAdapter.retry() }
 
-        lifecycleScope.launch {
-            uiState.map { it.pageIndex }
-        }
+        list.adapter = booksAdapter.withLoadStateHeaderAndFooter(header, footer)
 
         bindList(
+            header = header,
             booksAdapter = booksAdapter,
             uiState = uiState,
             onScrollChanged = uiActions
@@ -54,13 +55,14 @@ class PopularLoanBooksActivity : AppCompatActivity() {
     }
 
     private fun ActivityPopularLoanBooksBinding.bindList(
+        header: BooksLoadStateAdapter,
         booksAdapter: BooksAdapter,
         uiState: StateFlow<UiState>,
         onScrollChanged: (UiAction.Scroll) -> Unit
     ) {
         list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                if (dy != 0) onScrollChanged(UiAction.Scroll(currentPageIndex = uiState.value.pageIndex))
+                if (dy != 0) onScrollChanged(UiAction.Scroll(currentPageIndex = uiState.value.lastPageIndexScrolled))
             }
         })
 
@@ -98,23 +100,31 @@ class PopularLoanBooksActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             booksAdapter.loadStateFlow.collect { loadState ->
-                val isListEmpty =
+                header.loadState = loadState.mediator
+                    ?.refresh
+                    ?.takeIf { it is LoadState.Error && booksAdapter.itemCount > 0 }
+                    ?: loadState.prepend
+
+                emptyList.isVisible =
                     loadState.refresh is LoadState.NotLoading && booksAdapter.itemCount == 0
-                emptyList.isVisible = isListEmpty
-                list.isVisible = !isListEmpty
+                list.isVisible =
+                    loadState.source.refresh is LoadState.NotLoading || loadState.mediator?.refresh is LoadState.NotLoading
+                progressBar.isVisible = loadState.mediator?.refresh is LoadState.Loading
 
-                progressBar.isVisible = loadState.source.refresh is LoadState.Loading
-
-                val errorState = loadState.source.refresh as? LoadState.Error
+                val errorState = loadState.mediator?.refresh as? LoadState.Error
                     ?: loadState.source.append as? LoadState.Error
                     ?: loadState.source.prepend as? LoadState.Error
                     ?: loadState.append as? LoadState.Error
                     ?: loadState.prepend as? LoadState.Error
-                errorState?.let {
-                    errorMsg.text = "${it.error}"
+
+                if (errorState == null) {
+                    errorMsg.isVisible = false
+                    retryButton.isVisible = false
+                } else {
+                    errorMsg.text = "${errorState.error}"
+                    errorMsg.isVisible = true
+                    retryButton.isVisible = true
                 }
-                errorMsg.isVisible = errorState != null
-                retryButton.isVisible = errorState != null
             }
         }
     }
