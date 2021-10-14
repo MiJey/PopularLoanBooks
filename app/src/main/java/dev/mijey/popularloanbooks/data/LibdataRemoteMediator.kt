@@ -48,7 +48,10 @@ class LibdataRemoteMediator(
                 pageSize = state.config.pageSize
             )
 
-            val books = apiResponse.items[1].row ?: throw Exception("server error")
+            // TODO 헤더 에러 메시지에 따라 적절한 예외처리
+            val books = apiResponse.items.getOrNull(1)?.row
+            // ?.sortedWith(compareBy { it.rankNumber.toInt() })
+                ?: emptyList()
             val endOfPaginationReached = books.isEmpty()
 
             bookDatabase.withTransaction {
@@ -65,6 +68,7 @@ class LibdataRemoteMediator(
                 bookDatabase.remoteKeysDao().insertAll(keys)
                 bookDatabase.booksDao().insertAll(books)
             }
+
             return MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
         } catch (exception: IOException) {
             return MediatorResult.Error(exception)

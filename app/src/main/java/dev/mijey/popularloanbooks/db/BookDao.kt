@@ -12,8 +12,7 @@ interface BookDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(books: List<Book>)
 
-    // TODO ORDER BY id
-    @Query("SELECT * FROM books")
+    @Query("SELECT * FROM books ORDER BY id")
     fun getBooks(): PagingSource<Int, Book>
 
     @Query("DELETE FROM books")

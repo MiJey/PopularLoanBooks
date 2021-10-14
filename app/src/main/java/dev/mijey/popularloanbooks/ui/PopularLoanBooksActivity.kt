@@ -1,6 +1,7 @@
 package dev.mijey.popularloanbooks.ui
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -105,25 +106,32 @@ class PopularLoanBooksActivity : AppCompatActivity() {
                     ?.takeIf { it is LoadState.Error && booksAdapter.itemCount > 0 }
                     ?: loadState.prepend
 
-                emptyList.isVisible =
-                    loadState.refresh is LoadState.NotLoading && booksAdapter.itemCount == 0
-                list.isVisible =
-                    loadState.source.refresh is LoadState.NotLoading || loadState.mediator?.refresh is LoadState.NotLoading
+                emptyList.isVisible = loadState.refresh is LoadState.NotLoading
+                        && booksAdapter.itemCount == 0
+                list.isVisible = loadState.source.refresh is LoadState.NotLoading
+                        || loadState.mediator?.refresh is LoadState.NotLoading
                 progressBar.isVisible = loadState.mediator?.refresh is LoadState.Loading
 
-                val errorState = loadState.mediator?.refresh as? LoadState.Error
-                    ?: loadState.source.append as? LoadState.Error
+                if (loadState.mediator?.refresh is LoadState.Error && booksAdapter.itemCount == 0) {
+                    errorMsg.text = "${(loadState.mediator?.refresh as LoadState.Error).error}"
+                    errorMsg.isVisible = true
+                    retryButton.isVisible = true
+                } else {
+                    errorMsg.isVisible = false
+                    retryButton.isVisible = false
+                }
+
+                val errorState = loadState.source.append as? LoadState.Error
                     ?: loadState.source.prepend as? LoadState.Error
                     ?: loadState.append as? LoadState.Error
                     ?: loadState.prepend as? LoadState.Error
 
-                if (errorState == null) {
-                    errorMsg.isVisible = false
-                    retryButton.isVisible = false
-                } else {
-                    errorMsg.text = "${errorState.error}"
-                    errorMsg.isVisible = true
-                    retryButton.isVisible = true
+                errorState?.let {
+                    Toast.makeText(
+                        this@PopularLoanBooksActivity,
+                        "${it.error}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         }
